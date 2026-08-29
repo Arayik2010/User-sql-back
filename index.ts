@@ -71,7 +71,7 @@ app.post("/", async (req: Request, res: Response) => {
   }
 });
 
-app.delete("/api/users/:id", async (req: Request, res: Response) => {
+app.delete("/:id", async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     await pool.query("DELETE FROM users WHERE id = $1", [id]);
