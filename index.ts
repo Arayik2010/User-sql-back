@@ -39,7 +39,7 @@ app.use(
 app.use(express.json());
 
 // GET /api/users -> read all rows from the "users" table.
-app.get("/api/users", async (_req: Request, res: Response) => {
+app.get("/", async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(
       "SELECT id, name, email, created_at FROM users ORDER BY id"
@@ -52,7 +52,7 @@ app.get("/api/users", async (_req: Request, res: Response) => {
 });
 
 // POST /api/users -> insert a new row, so the frontend can also send data.
-app.post("/api/users", async (req: Request, res: Response) => {
+app.post("/", async (req: Request, res: Response) => {
   const { name, email } = req.body;
 
   if (!name) {
