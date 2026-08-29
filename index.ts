@@ -4,10 +4,36 @@ import { pool } from "./db";
 
 const app = express();
 
-// Without cors(), the browser blocks requests from the React app
-// (e.g. http://localhost:5173) because it runs on a different
-// origin (different port) than this API (http://localhost:5000).
-app.use(cors());
+const isProduction = process.env.NODE_ENV === "production";
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5175",
+  "http://localhost:5174",
+  process.env.FRONTEND_URL,
+  process.env.BACKEND_URL,
+].filter((origin): origin is string => Boolean(origin));
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl).
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("CORS blocked origin:", origin);
+        if (isProduction) {
+          callback(new Error("Not allowed by CORS"));
+        } else {
+          callback(null, true); // Allow anyway for development
+        }
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Lets Express read a JSON body on incoming requests (req.body).
 app.use(express.json());
