@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { ensureAuthSchema, login, register, requireAuth } from "./auth";
 import { pool } from "./db";
 
 const app = express();
@@ -38,11 +39,14 @@ app.use(
 // Lets Express read a JSON body on incoming requests (req.body).
 app.use(express.json());
 
+app.post("/register", register);
+app.post("/login", login);
+
 // GET /api/users -> read all rows from the "users" table.
-app.get("/", async (_req: Request, res: Response) => {
+app.get("/", requireAuth, async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      "SELECT id, name, email, created_at FROM users ORDER BY id"
+      "SELECT id, name, email, created_at FROM users  ORDER BY id"
     );
     res.json(result.rows);
   } catch (err) {
@@ -52,7 +56,7 @@ app.get("/", async (_req: Request, res: Response) => {
 });
 
 // POST /api/users -> insert a new row, so the frontend can also send data.
-app.post("/", async (req: Request, res: Response) => {
+app.post("/", requireAuth, async (req: Request, res: Response) => {
   const { name, email } = req.body;
 
   if (!name) {
@@ -71,7 +75,7 @@ app.post("/", async (req: Request, res: Response) => {
   }
 });
 
-app.delete("/:id", async (req: Request, res: Response) => {
+app.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     await pool.query("DELETE FROM users WHERE id = $1", [id]);
@@ -84,6 +88,13 @@ app.delete("/:id", async (req: Request, res: Response) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`API running on http://localhost:${PORT}`);
-});
+ensureAuthSchema()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`API running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to start API", err);
+    process.exit(1);
+  });
