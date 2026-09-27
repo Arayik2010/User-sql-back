@@ -32,3 +32,9 @@ WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'ada@example.com');
 INSERT INTO users (name, email)
 SELECT 'Alan Turing', 'alan@example.com'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'alan@example.com');
+
+-- Total salary helper used by GET /users_salary.
+CREATE OR REPLACE FUNCTION get_total_salary() RETURNS bigint AS $$
+  SELECT COALESCE(SUM(salary), 0)::bigint
+  FROM users_salaries
+$$ LANGUAGE SQL;

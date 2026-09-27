@@ -55,6 +55,38 @@ app.get("/", requireAuth, async (_req: Request, res: Response) => {
   }
 });
 
+app.get("/user_work", requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      "SELECT users.id, name, work_type, fk_user_work FROM users JOIN user_work ON users.id = user_work.fk_user_work;"
+
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+app.get("/users_salary", requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const [salariesResult, totalResult] = await Promise.all([
+      pool.query(
+        "SELECT users.id, name, salary FROM users JOIN users_salaries ON users.id = users_salaries.user_id"
+      ),
+      pool.query("SELECT get_total_salary() AS total_salary"),
+    ]);
+
+    res.json({
+      salaries: salariesResult.rows,
+      total_salary: totalResult.rows[0]?.total_salary ?? 0,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch users salaries" });
+  }
+});
+
 // POST /api/users -> insert a new row, so the frontend can also send data.
 app.post("/", requireAuth, async (req: Request, res: Response) => {
   const { name, email } = req.body;
@@ -72,6 +104,53 @@ app.post("/", requireAuth, async (req: Request, res: Response) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
+app.get("/:id", requireAuth, async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "invalid id" });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT id, name, email, created_at FROM users WHERE id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+app.put("/:id", requireAuth, async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { name, email } = req.body;
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "invalid id" });
+  }
+  if (!name) {
+    return res.status(400).json({ error: "name is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING id, name, email, created_at",
+      [name, email || null, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
 
