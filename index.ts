@@ -72,7 +72,7 @@ app.get("/users_salary", requireAuth, async (_req: Request, res: Response) => {
   try {
     const [salariesResult, totalResult] = await Promise.all([
       pool.query(
-        "SELECT users.id, name, salary FROM users JOIN users_salaries ON users.id = users_salaries.user_id"
+        "SELECT users.id, users.name, users_salaries.salary FROM users JOIN users_salaries ON users.id = users_salaries.user_id"
       ),
       pool.query("SELECT get_total_salary() AS total_salary"),
     ]);
