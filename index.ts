@@ -68,6 +68,19 @@ app.get("/user_work", requireAuth, async (_req: Request, res: Response) => {
   }
 });
 
+app.get("/works_salaries", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      "SELECT user_work.id, user_work.work_type, users_salaries.salary FROM user_work JOIN users_salaries ON user_work.fk_user_work = users_salaries.user_id;"
+    );
+    res.json(result.rows)
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+})
+
+
 app.get("/users_salary", requireAuth, async (_req: Request, res: Response) => {
   try {
     const [salariesResult, totalResult] = await Promise.all([
@@ -86,6 +99,7 @@ app.get("/users_salary", requireAuth, async (_req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch users salaries" });
   }
 });
+
 
 // POST /api/users -> insert a new row, so the frontend can also send data.
 app.post("/", requireAuth, async (req: Request, res: Response) => {
